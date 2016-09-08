@@ -48,7 +48,7 @@ private func realmOptionalToAnyObject<T: RealmOptionalType>(value: T?) -> AnyObj
 }
 
 // Not all RealmOptionalType's can be cast from AnyObject, so handle casting logic here.
-private func anyObjectToRealmOptional<T: RealmOptionalType>(anyObject: AnyObject?) -> T? {
+private func anyObjectToRealmOptional<T: RealmOptionalType>(anyObject: Any?) -> T? {
     if T.self is Int8.Type {
         return (anyObject as! NSNumber?)?.int8Value as! T?
     } else if T.self is Int16.Type {

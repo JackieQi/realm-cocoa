@@ -263,7 +263,7 @@ public final class Realm {
     - returns: The created object.
     */
     @discardableResult
-    public func createObject<T: Object>(ofType type: T.Type, populatedWith value: AnyObject = [:], update: Bool = false) -> T {
+    public func createObject<T: Object>(ofType type: T.Type, populatedWith value: Any = [:], update: Bool = false) -> T {
         let typeName = (type as Object.Type).className()
         if update && schema[typeName]?.primaryKeyProperty == nil {
             throwRealmException("'\(typeName)' does not have a primary key and can not be updated")
@@ -300,7 +300,7 @@ public final class Realm {
     :nodoc:
     */
     @discardableResult
-    public func createDynamicObject(ofType typeName: String, populatedWith value: AnyObject = [:], update: Bool = false) -> DynamicObject {
+    public func createDynamicObject(ofType typeName: String, populatedWith value: Any = [:], update: Bool = false) -> DynamicObject {
         if update && schema[typeName]?.primaryKeyProperty == nil {
             throwRealmException("'\(typeName)' does not have a primary key and can not be updated")
         }
@@ -473,13 +473,13 @@ public final class Realm {
 
     - returns: A token which must be held for as long as you want notifications to be delivered.
     */
-    public func addNotificationBlock(block: NotificationBlock) -> NotificationToken {
+    public func addNotificationBlock(block: @escaping NotificationBlock) -> NotificationToken {
         return rlmRealm.addNotificationBlock { rlmNotification, _ in
             switch rlmNotification {
             case RLMNotification.DidChange:
-                block(notification: .DidChange, realm: self)
+                block(.DidChange, self)
             case RLMNotification.RefreshRequired:
-                block(notification: .RefreshRequired, realm: self)
+                block(.RefreshRequired, self)
             default:
                 fatalError("Unhandled notification type: \(rlmNotification)")
             }
@@ -628,7 +628,7 @@ public enum Notification: String {
 }
 
 /// Closure to run when the data in a Realm was modified.
-public typealias NotificationBlock = (notification: Notification, realm: Realm) -> Void
+public typealias NotificationBlock = (_ notification: Notification, _ realm: Realm) -> Void
 
 
 // MARK: Unavailable
@@ -639,10 +639,10 @@ extension Realm {
     public var inWriteTransaction : Bool { fatalError() }
 
     @available(*, unavailable, renamed:"createObject(ofType:populatedWith:update:)")
-    public func create<T: Object>(_ type: T.Type, value: AnyObject = [:], update: Bool = false) -> T { fatalError() }
+    public func create<T: Object>(_ type: T.Type, value: Any = [:], update: Bool = false) -> T { fatalError() }
 
     @available(*, unavailable, renamed:"createDynamicObject(ofType:populatedWith:update:)")
-    public func dynamicCreate(_ className: String, value: AnyObject = [:], update: Bool = false) -> DynamicObject {
+    public func dynamicCreate(_ className: String, value: Any = [:], update: Bool = false) -> DynamicObject {
         fatalError()
     }
 

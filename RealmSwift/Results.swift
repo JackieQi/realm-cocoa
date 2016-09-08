@@ -180,7 +180,7 @@ public final class Results<T: Object>: NSObject, NSFastEnumeration {
 
     - returns: Array containing the results of invoking `valueForKey(_:)` using key on each of the collection's objects.
     */
-    public override func value(forKey key: String) -> AnyObject? {
+    public override func value(forKey key: String) -> Any? {
         return value(forKeyPath: key)
     }
 
@@ -193,7 +193,7 @@ public final class Results<T: Object>: NSObject, NSFastEnumeration {
      - returns: Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
      collection's objects.
      */
-    public override func value(forKeyPath keyPath: String) -> AnyObject? {
+    public override func value(forKeyPath keyPath: String) -> Any? {
         return rlmResults.value(forKeyPath: keyPath)
     }
 
@@ -205,7 +205,7 @@ public final class Results<T: Object>: NSObject, NSFastEnumeration {
     - parameter value: The object value.
     - parameter key:   The name of the property.
     */
-    public override func setValue(_ value: AnyObject?, forKey key: String) {
+    public override func setValue(_ value: Any?, forKey key: String) {
         return rlmResults.setValue(value, forKeyPath: key)
     }
 
@@ -373,9 +373,9 @@ public final class Results<T: Object>: NSObject, NSFastEnumeration {
      - parameter block: The block to be called with the evaluated results and change information.
      - returns: A token which must be held for as long as you want query results to be delivered.
      */
-    public func addNotificationBlock(block: ((RealmCollectionChange<Results>) -> Void)) -> NotificationToken {
+    public func addNotificationBlock(block: @escaping ((RealmCollectionChange<Results>) -> Void)) -> NotificationToken {
         return rlmResults.addNotificationBlock { results, change, error in
-            block(RealmCollectionChange.fromObjc(value: self, change: change, error: error))
+            block(RealmCollectionChange.fromObjc(value: self, change: change, error: error as! Error?))
         }
     }
 }
@@ -403,11 +403,11 @@ extension Results: RealmCollection {
     public func index(before i: Int) -> Int { return i - 1 }
 
     /// :nodoc:
-    public func _addNotificationBlock(block: (RealmCollectionChange<AnyRealmCollection<T>>) -> Void) ->
+    public func _addNotificationBlock(block: @escaping (RealmCollectionChange<AnyRealmCollection<T>>) -> Void) ->
         NotificationToken {
         let anyCollection = AnyRealmCollection(self)
         return rlmResults.addNotificationBlock { _, change, error in
-            block(RealmCollectionChange.fromObjc(value: anyCollection, change: change, error: error))
+            block(RealmCollectionChange.fromObjc(value: anyCollection, change: change, error: error as! Error?))
         }
     }
 }

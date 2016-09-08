@@ -99,17 +99,17 @@ public enum RealmCollectionChange<T> {
     /// .Error result and an NSError with details. Currently the only thing
     /// that can fail is opening the Realm on a background worker thread to
     /// calculate the change set.
-    case Error(NSError)
+    case Error(Error)
 
-    static func fromObjc(value: T, change: RLMCollectionChange?, error: NSError?) -> RealmCollectionChange {
+    static func fromObjc(value: T, change: RLMCollectionChange?, error: Error?) -> RealmCollectionChange {
         if let error = error {
             return .Error(error)
         }
         if let change = change {
             return .Update(value,
-                deletions: change.deletions as! [Int],
-                insertions: change.insertions as! [Int],
-                modifications: change.modifications as! [Int])
+                deletions: change.deletions as [Int],
+                insertions: change.insertions as [Int],
+                modifications: change.modifications as [Int])
         }
         return .Initial(value)
     }
@@ -279,7 +279,7 @@ public protocol RealmCollection: RandomAccessCollection, LazyCollectionProtocol,
 
     - returns: Array containing the results of invoking `valueForKey(_:)` using key on each of the collection's objects.
     */
-    func value(forKey key: String) -> AnyObject?
+    func value(forKey key: String) -> Any?
 
     /**
      Returns an Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
@@ -290,7 +290,7 @@ public protocol RealmCollection: RandomAccessCollection, LazyCollectionProtocol,
      - returns: Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
      collection's objects.
      */
-    func value(forKeyPath keyPath: String) -> AnyObject?
+    func value(forKeyPath keyPath: String) -> Any?
 
     /**
     Invokes `setValue(_:forKey:)` on each of the collection's objects using the specified value and key.
@@ -300,7 +300,7 @@ public protocol RealmCollection: RandomAccessCollection, LazyCollectionProtocol,
     - parameter value: The object value.
     - parameter key:   The name of the property.
     */
-    func setValue(_ value: AnyObject?, forKey key: String)
+    func setValue(_ value: Any?, forKey key: String)
 
     // MARK: Notifications
 
@@ -357,10 +357,10 @@ public protocol RealmCollection: RandomAccessCollection, LazyCollectionProtocol,
      - parameter block: The block to be called with the evaluated collection and change information.
      - returns: A token which must be held for as long as you want updates to be delivered.
      */
-    func addNotificationBlock(block: (RealmCollectionChange<Self>) -> Void) -> NotificationToken
+    func addNotificationBlock(block: @escaping (RealmCollectionChange<Self>) -> Void) -> NotificationToken
 
     /// :nodoc:
-    func _addNotificationBlock(block: (RealmCollectionChange<AnyRealmCollection<Element>>) -> Void) -> NotificationToken
+    func _addNotificationBlock(block: @escaping (RealmCollectionChange<AnyRealmCollection<Element>>) -> Void) -> NotificationToken
 }
 
 private class _AnyRealmCollectionBase<T: Object> {
@@ -387,10 +387,10 @@ private class _AnyRealmCollectionBase<T: Object> {
     func makeIterator() -> RLMIterator<T> { fatalError() }
     var startIndex: Int { fatalError() }
     var endIndex: Int { fatalError() }
-    func value(forKey key: String) -> AnyObject? { fatalError() }
-    func value(forKeyPath keyPath: String) -> AnyObject? { fatalError() }
-    func setValue(_ value: AnyObject?, forKey key: String) { fatalError() }
-    func _addNotificationBlock(block: (RealmCollectionChange<Wrapper>) -> Void)
+    func value(forKey key: String) -> Any? { fatalError() }
+    func value(forKeyPath keyPath: String) -> Any? { fatalError() }
+    func setValue(_ value: Any?, forKey key: String) { fatalError() }
+    func _addNotificationBlock(block: @escaping (RealmCollectionChange<Wrapper>) -> Void)
         -> NotificationToken { fatalError() }
 }
 
@@ -609,7 +609,7 @@ private final class _AnyRealmCollection<C: RealmCollection>: _AnyRealmCollection
 
     - returns: Array containing the results of invoking `valueForKey(_:)` using key on each of the collection's objects.
     */
-    override func value(forKey key: String) -> AnyObject? { return base.value(forKey: key) }
+    override func value(forKey key: String) -> Any? { return base.value(forKey: key) }
 
     /**
      Returns an Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
@@ -620,7 +620,7 @@ private final class _AnyRealmCollection<C: RealmCollection>: _AnyRealmCollection
      - returns: Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
        collection's objects.
      */
-    override func value(forKeyPath keyPath: String) -> AnyObject? { return base.value(forKeyPath: keyPath) }
+    override func value(forKeyPath keyPath: String) -> Any? { return base.value(forKeyPath: keyPath) }
 
     /**
     Invokes `setValue(_:forKey:)` on each of the collection's objects using the specified value and key.
@@ -630,12 +630,12 @@ private final class _AnyRealmCollection<C: RealmCollection>: _AnyRealmCollection
     - parameter value: The object value.
     - parameter key:   The name of the property.
     */
-    override func setValue(_ value: AnyObject?, forKey key: String) { base.setValue(value, forKey: key) }
+    override func setValue(_ value: Any?, forKey key: String) { base.setValue(value, forKey: key) }
 
     // MARK: Notifications
 
     /// :nodoc:
-    override func _addNotificationBlock(block: (RealmCollectionChange<Wrapper>) -> Void)
+    override func _addNotificationBlock(block: @escaping (RealmCollectionChange<Wrapper>) -> Void)
         -> NotificationToken { return base._addNotificationBlock(block: block) }
 }
 
@@ -646,6 +646,17 @@ Forwards operations to an arbitrary underlying collection having the same
 Element type, hiding the specifics of the underlying `RealmCollection`.
 */
 public final class AnyRealmCollection<T: Object>: RealmCollection {
+    /**
+     Invokes `setValue(_:forKey:)` on each of the collection's objects using the specified value and key.
+     
+     - warning: This method can only be called during a write transaction.
+     
+     - parameter value: The object value.
+     - parameter key:   The name of the property.
+     */
+    public func setValue(_ value: Any?, forKey key: String) {
+        base.setValue(value, forKey: key)
+    }
 
     public func index(after i: Int) -> Int { return i + 1 }
     public func index(before i: Int) -> Int { return i - 1 }
@@ -852,7 +863,7 @@ public final class AnyRealmCollection<T: Object>: RealmCollection {
 
     - returns: Array containing the results of invoking `valueForKey(_:)` using key on each of the collection's objects.
     */
-    public func value(forKey key: String) -> AnyObject? { return base.value(forKey: key) }
+    public func value(forKey key: String) -> Any? { return base.value(forKey: key) }
 
     /**
      Returns an Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
@@ -863,7 +874,7 @@ public final class AnyRealmCollection<T: Object>: RealmCollection {
      - returns: Array containing the results of invoking `valueForKeyPath(_:)` using keyPath on each of the
      collection's objects.
      */
-    public func value(forKeyPath keyPath: String) -> AnyObject? { return base.value(forKeyPath: keyPath) }
+    public func value(forKeyPath keyPath: String) -> Any? { return base.value(forKeyPath: keyPath) }
 
     /**
     Invokes `setValue(_:forKey:)` on each of the collection's objects using the specified value and key.
@@ -930,11 +941,11 @@ public final class AnyRealmCollection<T: Object>: RealmCollection {
      - parameter block: The block to be called with the evaluated collection and change information.
      - returns: A token which must be held for as long as you want updates to be delivered.
      */
-    public func addNotificationBlock(block: (RealmCollectionChange<AnyRealmCollection>) -> ())
+    public func addNotificationBlock(block: @escaping (RealmCollectionChange<AnyRealmCollection>) -> ())
         -> NotificationToken { return base._addNotificationBlock(block: block) }
 
     /// :nodoc:
-    public func _addNotificationBlock(block: (RealmCollectionChange<AnyRealmCollection>) -> ())
+    public func _addNotificationBlock(block: @escaping (RealmCollectionChange<AnyRealmCollection>) -> ())
         -> NotificationToken { return base._addNotificationBlock(block: block) }
 }
 

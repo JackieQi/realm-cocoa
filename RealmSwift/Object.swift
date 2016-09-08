@@ -93,7 +93,7 @@ public class Object: RLMObjectBase {
                        thrown if any required properties are not present and no default is set.
     */
     public init(value: AnyObject) {
-        self.dynamicType.sharedSchema() // ensure this class' objectSchema is loaded in the partialSharedSchema
+        type(of: self).sharedSchema() // ensure this class' objectSchema is loaded in the partialSharedSchema
         super.init(value: value, schema: RLMSchema.partialShared())
     }
 
@@ -172,7 +172,7 @@ public class Object: RLMObjectBase {
     // MARK: Key-Value Coding & Subscripting
 
     /// Returns or sets the value of the property with the given name.
-    public subscript(key: String) -> AnyObject? {
+    public subscript(key: String) -> Any? {
         get {
             if realm == nil {
                 return value(forKey: key)
@@ -225,7 +225,7 @@ public class Object: RLMObjectBase {
 
     - parameter object: Object to compare for equality.
     */
-    public override func isEqual(_ object: AnyObject?) -> Bool {
+    public override func isEqual(_ object: Any?) -> Bool {
         return RLMObjectBaseAreEqual(self as RLMObjectBase?, object as? RLMObjectBase)
     }
 
@@ -245,7 +245,7 @@ public class Object: RLMObjectBase {
     WARNING: This is an internal initializer not intended for public use.
     :nodoc:
     */
-    public override required init(value: AnyObject, schema: RLMSchema) {
+    public override required init(value: Any, schema: RLMSchema) {
         super.init(value: value, schema: schema)
     }
 
@@ -300,12 +300,12 @@ public final class DynamicObject: Object {
     }
 
     /// :nodoc:
-    public override func value(forUndefinedKey key: String) -> AnyObject? {
+    public override func value(forUndefinedKey key: String) -> Any? {
         return self[key]
     }
 
     /// :nodoc:
-    public override func setValue(_ value: AnyObject?, forUndefinedKey key: String) {
+    public override func setValue(_ value: Any?, forUndefinedKey key: String) {
         self[key] = value
     }
 
@@ -345,7 +345,7 @@ public class ObjectUtil: NSObject {
     // Get the names of all properties in the object which are of type List<>.
     @objc private class func getGenericListPropertyNames(_ object: AnyObject) -> NSArray {
         return Mirror(reflecting: object).children.filter { (prop: Mirror.Child) in
-            return prop.value.dynamicType is RLMListBase.Type
+            return type(of: prop.value) is RLMListBase.Type
         }.flatMap { (prop: Mirror.Child) in
             return prop.label
         } as NSArray
